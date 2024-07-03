@@ -20,3 +20,6 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 Route::get('/requests', [RequestController::class, 'index']);
+Route::delete('/requests/{id}', [RequestController::class, 'destroy']);
+Route::post('/requests', [RequestController::class, 'store']);
+Route::put('/requests/{id}', [RequestController::class, 'update']);
