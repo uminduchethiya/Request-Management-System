@@ -40,8 +40,10 @@ class RequestController extends Controller
         return response()->json($newRequest, Response::HTTP_CREATED);
     }
 
-    public function update(HttpRequest $request, Request $requestItem)
+    public function update(HttpRequest $request, $id)
     {
+        $requestItem = Request::findOrFail($id); // Fetch the Request model instance
+    
         $validated = $request->validate([
             'created_on' => 'required|date',
             'location' => 'required|string',
@@ -52,9 +54,10 @@ class RequestController extends Controller
             'requested_by' => 'required|string',
             'assigned_to' => 'nullable|string',
         ]);
-
+    
         $requestItem->update($validated);
-
+    
         return response()->json($requestItem);
     }
+    
 }
