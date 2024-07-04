@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
 import AdminLayout from "../../components/AdminLayout";
 import axiosClient from "../../utils/axiosClient";
 import plus from "../../assets/img/plus.png";
@@ -19,11 +18,19 @@ const AdminDashboard = () => {
   });
   const [isEditing, setIsEditing] = useState(false);
   const [selectedRequestId, setSelectedRequestId] = useState(null);
+  const [validationErrors, setValidationErrors] = useState({
+    created_on: false,
+    location: false,
+    service: false,
+    department: false,
+    requested_by: false,
+  });
 
   useEffect(() => {
     fetchRequests();
   }, []);
 
+  // Fetch requests from API
   const fetchRequests = async () => {
     try {
       const response = await axiosClient.get("/requests");
@@ -33,6 +40,7 @@ const AdminDashboard = () => {
     }
   };
 
+  // Handle delete request
   const onDeleteClick = async (request) => {
     try {
       await axiosClient.delete(`/requests/${request.id}`);
@@ -43,6 +51,7 @@ const AdminDashboard = () => {
     }
   };
 
+  // Toggle modal for add/edit request
   const toggleModal = () => {
     setIsModalOpen(!isModalOpen);
     setIsEditing(false); // Reset editing state when closing modal
@@ -50,28 +59,69 @@ const AdminDashboard = () => {
     resetFormData(); // Reset form data
   };
 
+  // Handle input change in form fields
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
 
+  // Handle form submission (create/update request)
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Validation
+    let valid = true;
+    let errors = {
+      created_on: false,
+      location: false,
+      service: false,
+      department: false,
+      requested_by: false,
+    };
+    if (!formData.created_on) {
+      errors.created_on = true;
+      valid = false;
+    }
+    if (!formData.location) {
+      errors.location = true;
+      valid = false;
+    }
+    if (!formData.service) {
+      errors.service = true;
+      valid = false;
+    }
+    if (!formData.department) {
+      errors.department = true;
+      valid = false;
+    }
+    if (!formData.requested_by) {
+      errors.requested_by = true;
+      valid = false;
+    }
+
+    setValidationErrors(errors);
+
+    if (!valid) {
+      return;
+    }
+
     try {
+      let updatedRequest;
       if (isEditing && selectedRequestId) {
         // Update existing request
         await axiosClient.put(`/requests/${selectedRequestId}`, formData);
-        const updatedRequests = requests.map((request) =>
-          request.id === selectedRequestId
-            ? { ...formData, id: selectedRequestId }
-            : request
-        );
-        setRequests(updatedRequests);
+        updatedRequest = { ...formData, id: selectedRequestId };
       } else {
         // Create new request
         const response = await axiosClient.post("/requests", formData);
-        setRequests([...requests, response.data]);
+        updatedRequest = response.data;
       }
+
+      const updatedRequests = requests.map((request) =>
+        request.id === updatedRequest.id ? updatedRequest : request
+      );
+      setRequests(updatedRequests);
+
       setIsModalOpen(false);
       resetFormData();
     } catch (error) {
@@ -82,6 +132,7 @@ const AdminDashboard = () => {
     }
   };
 
+  // Edit request - populate form for editing
   const editRequest = (request) => {
     setSelectedRequestId(request.id);
     setFormData({ ...request });
@@ -89,6 +140,7 @@ const AdminDashboard = () => {
     setIsModalOpen(true);
   };
 
+  // Reset form data and validation errors
   const resetFormData = () => {
     setFormData({
       created_on: "",
@@ -100,314 +152,345 @@ const AdminDashboard = () => {
       requested_by: "",
       assigned_to: "",
     });
+    setValidationErrors({
+      created_on: false,
+      location: false,
+      service: false,
+      department: false,
+      requested_by: false,
+    });
+  };
+
+  // Function to get status color class based on status
+  const getStatusColorClass = (status) => {
+    switch (status) {
+      case "NEW":
+        return "bg-[#FFF1AC]";
+      case "IN_PROGRESS":
+        return "bg-[#E1F5E7]";
+      case "ON_HOLD":
+        return "bg-[EAEAFF]";
+      case "REJECTED":
+        return "bg-[#FAE1E1]"; // Changed to orange background
+      case "CANCELLED":
+        return "bg-[#FFE9D4]";
+      default:
+        return ""; // Default case, if none of the above cases match
+    }
+  };
+  
+  const getPriorityColorClass = (priority) => {
+    switch (priority) {
+      case "LOW":
+        return "bg-[#58C42B]";
+      case "MEDIUM":
+        return "bg-[#FFD261]";
+      case "HIGH":
+        return "bg-[#DCD9D9]";
+      default:
+        return ""; // Default case, if none of the above cases match
+    }
   };
 
   return (
     <AdminLayout>
-      <div>
-        <html lang="en">
-          <head>
-            <meta charSet="UTF-8" />
-            <meta
-              name="viewport"
-              content="width=device-width, initial-scale=1.0"
-            />
-            <title>Admin Dashboard</title>
-          </head>
-          <body className=" ">
-            <div className="  flex  mb-2  h-48 bg-white w-full ">
-              <div className="flex items-center px-10 w-[250px]  ">
-                <h1 className=" flex text-2xl   font-bold  ">Requests</h1>
-              </div>
-              <div className="flex items-center px-10 w-[250px]  ">
-                <button
-                  className="btn-add bg-[#830823] rounded-md text-white py-2 px-4 w-full flex items-center"
-                  onClick={() => {
-                    toggleModal();
-                  }}
-                >
-                  <img src={plus} alt="Add" className="mr-2  ml-6 " />{" "}
-                  {/* Plus mark image */}
-                  Add New
-                </button>
-              </div>
-              <div className="flex justify-between   mt-4">
-                <div className="flex flex-col items-center ml-8">
-                  <div className="bg-[#FFE2E8] rounded-full h-40 w-40 flex flex-col items-center justify-center">
-                    <span className="text-4xl font-bold">10</span>
-                    <p className="text-lg mt-1">New Requests</p>
-                  </div>
-                </div>
-                <div className="flex flex-col items-center ml-8">
-                  <div className="bg-[#CCF5BB] rounded-full h-40 w-40 flex flex-col items-center justify-center">
-                    <span className="text-4xl font-bold">05</span>
-                    <p className="text-lg mt-1">Delayed Requests</p>
-                  </div>
-                </div>
-                <div className="flex flex-col items-center ml-8">
-                  <div className="bg-[#D0EEFF] rounded-full h-40 w-40 flex flex-col items-center justify-center">
-                    <span className="text-4xl font-bold">02</span>
-                    <p className="text-lg mt-1">Escalated Requests</p>
-                  </div>
-                </div>
-                <div className="flex flex-col items-center ml-8">
-                  <div className="bg-[#D2D4FF] rounded-full h-40 w-40 flex flex-col items-center justify-center">
-                    <span className="text-4xl font-bold">00</span>
-                    <p className="text-lg mt-1">On Hold Requests</p>
-                  </div>
-                </div>
+      <div className="w-full">
+        {/* Request header */}
+        <div className="flex mb-2 h-48 bg-white w-full">
+          <div className="flex items-center px-10 w-80">
+            <h1 className="text-2xl font-bold">Requests</h1>
+          </div>
+          <div className="flex items-center px-10 w-80">
+            <button
+              className="btn-add bg-[#830823] rounded-md text-white py-2 px-4  flex items-center"
+              onClick={toggleModal}
+            >
+              <img src={plus} alt="Add" className="mr-2 " />
+              Add New
+            </button>
+          </div>
+          <div className="flex justify-between mt-4">
+            <div className="flex flex-col items-center ml-8">
+              <div className="bg-[#FFE2E8] rounded-full h-40 w-40 flex flex-col items-center justify-center">
+                <span className="text-4xl font-bold">10</span>
+                <p className="text-lg mt-1">New Requests</p>
               </div>
             </div>
+            <div className="flex flex-col items-center ml-8">
+              <div className="bg-[#CCF5BB] rounded-full h-40 w-40 flex flex-col items-center justify-center">
+                <span className="text-4xl font-bold">05</span>
+                <p className="text-lg mt-1">Delayed Requests</p>
+              </div>
+            </div>
+            <div className="flex flex-col items-center ml-8">
+              <div className="bg-[#D0EEFF] rounded-full h-40 w-40 flex flex-col items-center justify-center">
+                <span className="text-4xl font-bold">02</span>
+                <p className="text-lg mt-1">Escalated Requests</p>
+              </div>
+            </div>
+            <div className="flex flex-col items-center ml-8">
+              <div className="bg-[#D2D4FF] rounded-full h-40 w-40 flex flex-col items-center justify-center">
+                <span className="text-4xl font-bold">00</span>
+                <p className="text-lg mt-1">On Hold Requests</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        {/* End request header */}
 
-            {/* table */}
-            <div className=" w-full px-20">
-              <table className="mt-10 border  ">
-                <thead className="bg-[#C19C27]  ">
-                  <tr className="text-white">
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider border border-gray-300"
+        {/* Table */}
+        <div className="w-full flex justify-center mt-10">
+          <div className="">
+            <table className="min-w-full border">
+              <thead className="bg-[#C19C27] text-white">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider border border-gray-300">
+                    ID
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider border border-gray-300">
+                    Created On
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider border border-gray-300">
+                    Location
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider border border-gray-300">
+                    Service
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider border border-gray-300">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider border border-gray-300">
+                    Priority
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider border border-gray-300">
+                    Department
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider border border-gray-300">
+                    Requested By
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider border border-gray-300">
+                    Assigned To
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider border border-gray-300">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {requests.map((request) => (
+                  <tr key={request.id}>
+                    <td className="px-6 py-4 whitespace-nowrap border border-gray-300 text-sm">
+                      {request.id}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap border border-gray-300 text-sm">
+                      {request.created_on}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap border border-gray-300 text-sm">
+                      {request.location}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap border border-gray-300 text-sm">
+                      {request.service}
+                    </td>
+                    <td
+                      className={`px-6 py-4 whitespace-nowrap border border-gray-300 text-sm ${getStatusColorClass(
+                        request.status
+                      )}`}
                     >
-                      ID
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider border border-gray-300"
-                    >
-                      Created On
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider border border-gray-300"
-                    >
-                      Location
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider border border-gray-300"
-                    >
-                      Service
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider border border-gray-300"
-                    >
-                      Status
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider border border-gray-300"
-                    >
-                      Priority
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider border border-gray-300"
-                    >
-                      Department
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider border border-gray-300"
-                    >
-                      Requested By
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider border border-gray-300"
-                    >
-                      Assigned To
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider border border-gray-300"
-                    >
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {requests.map((request) => (
-                    <tr key={request.id} className="border border-gray-300">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-r border-gray-300">
-                        {request.id}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-r border-gray-300">
-                        {request.created_on}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-r border-gray-300">
-                        {request.location}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-r border-gray-300">
-                        {request.service}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-r border-gray-300">
-                        {request.status}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-r border-gray-300">
+                      {request.status}
+                    </td>
+                    <td className={`px-6 py-4 whitespace-nowrap border border-gray-300 text-sm ${getPriorityColorClass(request.priority)}`}>
                         {request.priority}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-r border-gray-300">
-                        {request.department}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-r border-gray-300">
-                        {request.requested_by}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-r border-gray-300">
-                        {request.assigned_to}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium flex space-x-2 border-r border-gray-300">
+                    <td className="px-6 py-4 whitespace-nowrap border border-gray-300 text-sm">
+                      {request.department}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap border border-gray-300 text-sm">
+                      {request.requested_by}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap border border-gray-300 text-sm">
+                      {request.assigned_to}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap border border-gray-300 text-sm">
+                      <div className="flex space-x-2">
                         <button
-                          className="btn-edit text-blue-500"
+                          className="text-blue-500"
                           onClick={() => editRequest(request)}
                         >
                           Edit
                         </button>
                         <button
-                          className="btn-delete text-red-500"
+                          className="text-red-500"
                           onClick={() => onDeleteClick(request)}
                         >
                           Delete
                         </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        {/* End table */}
 
-            {/* end table */}
-            {isModalOpen && (
-              <div className="fixed z-10 inset-0 overflow-y-auto">
-                <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-                  <div
-                    className="fixed inset-0 transition-opacity"
-                    aria-hidden="true"
-                  >
-                    <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
+        {/* Modal */}
+        {isModalOpen && (
+          <div className="fixed inset-0 flex items-center justify-center z-50">
+            <div className="fixed inset-0 bg-black opacity-50"></div>
+            <div
+              className="bg-white p-8 rounded-lg z-10 transform transition-all duration-300 ease-in-out"
+              style={{ transform: isModalOpen ? "scale(1)" : "scale(0.8)" }}
+            >
+              <h2 className="text-2xl font-bold mb-4">
+                {isEditing ? "Edit Request" : "Add New Request"}
+              </h2>
+              <form onSubmit={handleSubmit}>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block mb-1">Created On</label>
+                    <input
+                      type="date"
+                      name="created_on"
+                      value={formData.created_on}
+                      onChange={handleInputChange}
+                      className={`border rounded p-2 w-full ${
+                        validationErrors.created_on ? "border-red-500" : ""
+                      }`}
+                    />
+                    {validationErrors.created_on && (
+                      <span className="text-red-500 text-sm">
+                        Created On is required
+                      </span>
+                    )}
                   </div>
-
-                  <span
-                    className="hidden sm:inline-block sm:align-middle sm:h-screen"
-                    aria-hidden="true"
-                  >
-                    &#8203;
-                  </span>
-
-                  <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-                    <form onSubmit={handleSubmit}>
-                      <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                        <div className="sm:flex sm:items-start">
-                          <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
-                            <h3
-                              className="text-lg leading-6 font-medium text-gray-900"
-                              id="modal-title"
-                            >
-                              {isEditing ? "Edit Request" : "Add New Request"}
-                            </h3>
-                            <div className="mt-2">
-                              <input
-                                type="date"
-                                name="created_on"
-                                value={formData.created_on}
-                                onChange={handleInputChange}
-                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                                required
-                              />
-                              <input
-                                type="text"
-                                name="location"
-                                value={formData.location}
-                                onChange={handleInputChange}
-                                placeholder="Location"
-                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                                required
-                              />
-                              <input
-                                type="text"
-                                name="service"
-                                value={formData.service}
-                                onChange={handleInputChange}
-                                placeholder="Service"
-                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                                required
-                              />
-                              <select
-                                name="status"
-                                value={formData.status}
-                                onChange={handleInputChange}
-                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                                required
-                              >
-                                <option value="NEW">NEW</option>
-                                <option value="IN_PROGRESS">IN_PROGRESS</option>
-                                <option value="ON_HOLD">ON_HOLD</option>
-                                <option value="REJECTED">REJECTED</option>
-                                <option value="CANCELLED">CANCELLED</option>
-                              </select>
-                              <select
-                                name="priority"
-                                value={formData.priority}
-                                onChange={handleInputChange}
-                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                                required
-                              >
-                                <option value="HIGH">HIGH</option>
-                                <option value="MEDIUM">MEDIUM</option>
-                                <option value="LOW">LOW</option>
-                              </select>
-                              <input
-                                type="text"
-                                name="department"
-                                value={formData.department}
-                                onChange={handleInputChange}
-                                placeholder="Department"
-                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                                required
-                              />
-                              <input
-                                type="text"
-                                name="requested_by"
-                                value={formData.requested_by}
-                                onChange={handleInputChange}
-                                placeholder="Requested By"
-                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                                required
-                              />
-                              <input
-                                type="text"
-                                name="assigned_to"
-                                value={formData.assigned_to}
-                                onChange={handleInputChange}
-                                placeholder="Assigned To"
-                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                        <button
-                          type="submit"
-                          className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-500 text-base font-medium text-white hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
-                        >
-                          {isEditing ? "Update" : "Save"}
-                        </button>
-                        <button
-                          type="button"
-                          className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:w-auto sm:text-sm"
-                          onClick={toggleModal}
-                        >
-                          Close
-                        </button>
-                      </div>
-                    </form>
+                  <div>
+                    <label className="block mb-1">Location</label>
+                    <input
+                      type="text"
+                      name="location"
+                      value={formData.location}
+                      onChange={handleInputChange}
+                      className={`border rounded p-2 w-full ${
+                        validationErrors.location ? "border-red-500" : ""
+                      }`}
+                    />
+                    {validationErrors.location && (
+                      <span className="text-red-500 text-sm">
+                        Location is required
+                      </span>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block mb-1">Service</label>
+                    <input
+                      type="text"
+                      name="service"
+                      value={formData.service}
+                      onChange={handleInputChange}
+                      className={`border rounded p-2 w-full ${
+                        validationErrors.service ? "border-red-500" : ""
+                      }`}
+                    />
+                    {validationErrors.service && (
+                      <span className="text-red-500 text-sm">
+                        Service is required
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-sm">
+                    <label className="block mb-1">Status</label>
+                    <select
+                      name="status"
+                      value={formData.status}
+                      onChange={handleInputChange}
+                      className="border rounded p-2 w-full text-sm"
+                    >
+                      <option value="NEW">New</option>
+                      <option value="IN_PROGRESS">In Progress</option>
+                      <option value="ON_HOLD">On Hold</option>
+                      <option value="REJECTED">Rejected</option>
+                      <option value="CANCELLED">Cancel</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block mb-1">Priority</label>
+                    <select
+                      name="priority"
+                      value={formData.priority}
+                      onChange={handleInputChange}
+                      className="border rounded p-2 w-full"
+                    >
+                      <option value="LOW">Low</option>
+                      <option value="MEDIUM">Medium</option>
+                      <option value="HIGH">High</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block mb-1">Department</label>
+                    <input
+                      type="text"
+                      name="department"
+                      value={formData.department}
+                      onChange={handleInputChange}
+                      className={`border rounded p-2 w-full ${
+                        validationErrors.department ? "border-red-500" : ""
+                      }`}
+                    />
+                    {validationErrors.department && (
+                      <span className="text-red-500 text-sm">
+                        Department is required
+                      </span>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block mb-1">Requested By</label>
+                    <input
+                      type="text"
+                      name="requested_by"
+                      value={formData.requested_by}
+                      onChange={handleInputChange}
+                      className={`border rounded p-2 w-full ${
+                        validationErrors.requested_by ? "border-red-500" : ""
+                      }`}
+                    />
+                    {validationErrors.requested_by && (
+                      <span className="text-red-500 text-sm">
+                        Requested By is required
+                      </span>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block mb-1">Assigned To</label>
+                    <input
+                      type="text"
+                      name="assigned_to"
+                      value={formData.assigned_to}
+                      onChange={handleInputChange}
+                      className="border rounded p-2 w-full"
+                    />
                   </div>
                 </div>
-              </div>
-            )}
-          </body>
-        </html>
+                <div className="flex justify-end mt-4">
+                  <button
+                    type="button"
+                    className="bg-gray-500 text-white py-2 px-4 rounded mr-2"
+                    onClick={toggleModal}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="bg-[#830823] text-white py-2 px-4 rounded"
+                  >
+                    {isEditing ? "Update" : "Save"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+        {/* End modal */}
       </div>
     </AdminLayout>
   );

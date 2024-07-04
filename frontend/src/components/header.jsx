@@ -28,6 +28,7 @@ function header() {
 
               {/* menu */}
               <div className=" flex gap-10">
+                <div></div>
                 <div className="navigation flex items-center text-white text-md font-bold">
                   <img
                     src={home}
@@ -82,60 +83,49 @@ function header() {
                   {/* Settings Icon */}
                   Settings
                 </div>
-                <div className=""> 
-                  <a href="#" className="text-gray-800">
-                    <div className="flex justify-center items-center gap- mr-10 mt-4">
-                      <div className="relative md:mb-4 mb-4">
-                        <img
-                          src={themechange} // Use the imported image
-                          className="w-10 h-10"
-                          alt="Bell Icon"
-                        />
-                      </div>
+              </div>
 
-                      <div className="relative md:mb-4 mb-4">
-                        <div className="bottom-4 absolute left-6">
-                          <p className="flex h-1 w-1 items-center justify-center rounded-full bg-[#FB1018] p-3 text-xs text-white">
-                            0
-                          </p>
-                        </div>
-                        <img
-                          src={bellIcon} // Use the imported image
-                          className="w-6 h-6"
-                          alt="Bell Icon"
-                        />
-                      </div>
+              {/* themse and notifiaction */}
+              <div className="">
+                <a href="#" className="text-gray-800">
+                  <div className="flex justify-center items-center gap-4 mr-10 mt-4">
+                    {" "}
+                    {/* Increased gap-4 */}
+                    <div className="relative md:mb-4 mb-4">
+                      <img
+                        src={themechange} // Use the imported image
+                        className="w-10 h-10 justify-between"
+                        alt="Bell Icon"
+                      />
                     </div>
-                  </a>
-                </div>
+                    <div className="relative md:mb-4 mb-4">
+                      <div className="bottom-4 absolute left-6">
+                        <p className="flex h-1 w-1 items-center justify-center rounded-full bg-[#FB1018] p-3 text-xs text-white">
+                          0
+                        </p>
+                      </div>
+                      <img
+                        src={bellIcon} // Use the imported image
+                        className="w-6 h-6"
+                        alt="Bell Icon"
+                      />
+                    </div>
+                  </div>
+                </a>
               </div>
 
               {/* nav-right */}
-              <div className="flex items-center  h-20 justify-center">
+              <div className="flex items-center h-20 justify-center mr-3">
                 <div className="flex items-center md:gap-2">
-                  {/* Bell icon */}
-
-                  {/* Logout button */}
-                  <a
-                    href="#"
-                    className="text-gray-800"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      console.log("Logout clicked"); // Example action, replace with your logic
-                    }}
-                  >
-                    <div className="flex justify-center items-center mr-5 mt-3">
-                      <div className="relative md:mb-4 mb-4">
-                        {/* Logout icon */}
-                        <i
-                          className="fa fa-bell text text-2xl"
-                          aria-hidden="true"
-                        ></i>
-                      </div>
-                    </div>
-                  </a>
+                  {/* Welcome Admin text */}
+                  <p className="text-white mt-3">
+                    <span className="block">Welcome</span>
+                    <span className="block font-bold">Admin</span>
+                  </p>
                 </div>
               </div>
+
+              {/* end nav-right */}
             </div>
           </div>
         </header>
