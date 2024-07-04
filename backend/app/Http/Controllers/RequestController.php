@@ -3,9 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Request;
-use Illuminate\Routing\Controller;
 use Illuminate\Http\Request as HttpRequest;
 use Illuminate\Http\Response;
+use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\DB;
 
 class RequestController extends Controller
 {
@@ -43,7 +44,7 @@ class RequestController extends Controller
     public function update(HttpRequest $request, $id)
     {
         $requestItem = Request::findOrFail($id); // Fetch the Request model instance
-    
+
         $validated = $request->validate([
             'created_on' => 'required|date',
             'location' => 'required|string',
@@ -54,10 +55,26 @@ class RequestController extends Controller
             'requested_by' => 'required|string',
             'assigned_to' => 'nullable|string',
         ]);
-    
+
         $requestItem->update($validated);
-    
+
         return response()->json($requestItem);
+    }
+
+    public function getStatusCounts()
+    {
+        // Get counts for existing statuses directly from the database
+        $counts = Request::select(DB::raw('status, count(*) as count'))
+            ->groupBy('status')
+            ->get()
+            ->pluck('count', 'status')
+            ->toArray();
+    
+        // Ensure all status keys are present, even if their count is zero
+        $allStatuses = ['NEW', 'IN_PROGRESS', 'ON_HOLD', 'REJECTED', 'CANCELLED'];
+        $statusCounts = array_merge(array_fill_keys($allStatuses, 0), $counts);
+    
+        return response()->json($statusCounts);
     }
     
 }

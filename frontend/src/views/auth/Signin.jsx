@@ -1,3 +1,5 @@
+/* eslint-disable react/no-unescaped-entities */
+// eslint-disable-next-line no-unused-vars
 import React, { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axiosClient from '../../utils/axiosClient'; // Adjust the path as per your project structure
