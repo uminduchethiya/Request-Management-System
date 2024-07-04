@@ -4,8 +4,34 @@ import axiosClient from "../../utils/axiosClient";
 import plus from "../../assets/img/plus.png";
 
 const AdminDashboard = () => {
+  // count analysis
+  const [counts, setCounts] = useState({
+    NEW: 0,
+    IN_PROGRESS: 0,
+    ON_HOLD: 0,
+    REJECTED: 0,
+    CANCELLED: 0,
+  });
+
+  useEffect(() => {
+    fetchRequests();
+    fetchStatusCounts();
+  }, []);
+
+  const fetchStatusCounts = async () => {
+    try {
+      const response = await axiosClient.get("/request-status-counts");
+      setCounts(response.data);
+    } catch (error) {
+      console.error("Error fetching status counts:", error);
+    }
+  };
+  // end count Analysis
+
   const [requests, setRequests] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  //
   const [formData, setFormData] = useState({
     created_on: "",
     location: "",
@@ -117,10 +143,15 @@ const AdminDashboard = () => {
         updatedRequest = response.data;
       }
 
-      const updatedRequests = requests.map((request) =>
-        request.id === updatedRequest.id ? updatedRequest : request
-      );
-      setRequests(updatedRequests);
+      // Update the requests state with the new or updated request
+      if (isEditing && selectedRequestId) {
+        const updatedRequests = requests.map((request) =>
+          request.id === updatedRequest.id ? updatedRequest : request
+        );
+        setRequests(updatedRequests);
+      } else {
+        setRequests([...requests, updatedRequest]);
+      }
 
       setIsModalOpen(false);
       resetFormData();
@@ -178,7 +209,7 @@ const AdminDashboard = () => {
         return ""; // Default case, if none of the above cases match
     }
   };
-  
+
   const getPriorityColorClass = (priority) => {
     switch (priority) {
       case "LOW":
@@ -212,32 +243,103 @@ const AdminDashboard = () => {
           <div className="flex justify-between mt-4">
             <div className="flex flex-col items-center ml-8">
               <div className="bg-[#FFE2E8] rounded-full h-40 w-40 flex flex-col items-center justify-center">
-                <span className="text-4xl font-bold">10</span>
+                <span className="text-4xl font-bold">{counts.NEW}</span>
                 <p className="text-lg mt-1">New Requests</p>
               </div>
             </div>
             <div className="flex flex-col items-center ml-8">
               <div className="bg-[#CCF5BB] rounded-full h-40 w-40 flex flex-col items-center justify-center">
-                <span className="text-4xl font-bold">05</span>
-                <p className="text-lg mt-1">Delayed Requests</p>
+                <span className="text-4xl font-bold">{counts.IN_PROGRESS}</span>
+                <p className="text-lg mt-1">In Progress</p>
               </div>
             </div>
             <div className="flex flex-col items-center ml-8">
               <div className="bg-[#D0EEFF] rounded-full h-40 w-40 flex flex-col items-center justify-center">
-                <span className="text-4xl font-bold">02</span>
-                <p className="text-lg mt-1">Escalated Requests</p>
+                <span className="text-4xl font-bold">{counts.ON_HOLD}</span>
+                <p className="text-lg mt-1">On Hold</p>
               </div>
             </div>
             <div className="flex flex-col items-center ml-8">
               <div className="bg-[#D2D4FF] rounded-full h-40 w-40 flex flex-col items-center justify-center">
-                <span className="text-4xl font-bold">00</span>
-                <p className="text-lg mt-1">On Hold Requests</p>
+                <span className="text-4xl font-bold">{counts.REJECTED}</span>
+                <p className="text-lg mt-1">Rejected</p>
+              </div>
+            </div>
+            <div className="flex flex-col items-center ml-8">
+              <div className="bg-[#D2D4FF] rounded-full h-40 w-40 flex flex-col items-center justify-center">
+                <span className="text-4xl font-bold">{counts.CANCELLED}</span>
+                <p className="text-lg mt-1">Cancelled</p>
               </div>
             </div>
           </div>
         </div>
         {/* End request header */}
+        <div className="flex items-center space-x-6 p-6 px-6 ml-10">
+          {/* Search Bar */}
+          <input
+            type="text"
+            placeholder="Search by"
+            className="px-4 py-2 border rounded-md shadow-sm focus:ring focus:ring-blue-200"
+          />
 
+          {/* Date Picker */}
+          <input
+            type="text"
+            placeholder="Feb 1, 2024 - Feb 10, 2024"
+            className="px-4 py-2 border rounded-md shadow-sm focus:ring focus:ring-blue-200"
+          />
+
+          {/* Status Dropdown */}
+          <select className="px-4 py-2 border rounded-md shadow-sm focus:ring focus:ring-blue-200">
+            <option>Status</option>
+            {/* Add more options as needed */}
+          </select>
+
+          {/* Department Dropdown */}
+          <select className="px-4 py-2 border rounded-md shadow-sm focus:ring focus:ring-blue-200">
+            <option>Department</option>
+            {/* Add more options as needed */}
+          </select>
+
+          {/* Right Aligned Buttons */}
+          <div className="ml-auto flex space-x-2 px-40 lg:px-[570px] md:px-[500px] sm:px-[500px] ">
+            {/* Filter Button */}
+            <button className="p-2 bg-black rounded-md shadow-sm hover:bg-gray-300 focus:ring focus:ring-blue-200">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6 text-white"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21V13.414L3.293 6.707A1 1 0 013 6V4z"
+                />
+              </svg>
+            </button>
+
+            {/* Download Button */}
+            <button className="p-2 bg-black rounded-md shadow-sm hover:bg-gray-300 focus:ring focus:ring-blue-200">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6 text-white"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M4 16a1 1 0 001 1h14a1 1 0 001-1v-4a1 1 0 00-1-1h-3.586l-4-4H5a1 1 0 00-1 1v8zM4 10h7l4 4H5a1 1 0 01-1-1v-2z"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
         {/* Table */}
         <div className="w-full flex justify-center mt-10">
           <div className="">
@@ -298,9 +400,13 @@ const AdminDashboard = () => {
                     >
                       {request.status}
                     </td>
-                    <td className={`px-6 py-4 whitespace-nowrap border border-gray-300 text-sm ${getPriorityColorClass(request.priority)}`}>
-                        {request.priority}
-                      </td>
+                    <td
+                      className={`px-6 py-4 whitespace-nowrap border border-gray-300 text-sm ${getPriorityColorClass(
+                        request.priority
+                      )}`}
+                    >
+                      {request.priority}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap border border-gray-300 text-sm">
                       {request.department}
                     </td>
@@ -491,6 +597,94 @@ const AdminDashboard = () => {
           </div>
         )}
         {/* End modal */}
+        {/* paginatiom */}
+        <div className="flex items-center gap-4 ml-[600px] mt-4">
+          <button
+            disabled
+            className="flex items-center gap-2 px-6 py-3 font-sans text-xs font-bold text-center text-gray-900 uppercase align-middle transition-all rounded-lg select-none hover:bg-gray-900/10 active:bg-gray-900/20 disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
+            type="button"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth="2"
+              stroke="currentColor"
+              aria-hidden="true"
+              className="w-4 h-4"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"
+              ></path>
+            </svg>
+            Previous
+          </button>
+          <div className="flex items-center gap-2">
+            <button
+              className="relative h-10 max-h-[40px] w-10 max-w-[40px] select-none rounded-lg bg-[#830823]  text-center align-middle font-sans text-xs font-medium uppercase text-white shadow-md shadow-gray-900/10 transition-all hover:shadow-lg hover:shadow-gray-900/20 focus:opacity-[0.85] focus:shadow-none active:opacity-[0.85] active:shadow-none disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
+              type="button"
+            >
+              <span className="absolute transform -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2">
+                1
+              </span>
+            </button>
+            <button
+              className="relative h-10 max-h-[40px] w-10 max-w-[40px] select-none rounded-lg text-center align-middle font-sans text-xs font-medium uppercase text-gray-900 transition-all hover:bg-gray-900/10 active:bg-gray-900/20 disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
+              type="button"
+            >
+              <span className="absolute transform -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2">
+                2
+              </span>
+            </button>
+            <button
+              className="relative h-10 max-h-[40px] w-10 max-w-[40px] select-none rounded-lg text-center align-middle font-sans text-xs font-medium uppercase text-gray-900 transition-all hover:bg-gray-900/10 active:bg-gray-900/20 disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
+              type="button"
+            >
+              <span className="absolute transform -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2">
+                3
+              </span>
+            </button>
+            <button
+              className="relative h-10 max-h-[40px] w-10 max-w-[40px] select-none rounded-lg text-center align-middle font-sans text-xs font-medium uppercase text-gray-900 transition-all hover:bg-gray-900/10 active:bg-gray-900/20 disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
+              type="button"
+            >
+              <span className="absolute transform -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2">
+                4
+              </span>
+            </button>
+            <button
+              className="relative h-10 max-h-[40px] w-10 max-w-[40px] select-none rounded-lg text-center align-middle font-sans text-xs font-medium uppercase text-gray-900 transition-all hover:bg-gray-900/10 active:bg-gray-900/20 disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
+              type="button"
+            >
+              <span className="absolute transform -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2">
+                5
+              </span>
+            </button>
+          </div>
+          <button
+            className="flex items-center gap-2 px-6 py-3 font-sans text-xs font-bold text-center text-gray-900 uppercase align-middle transition-all rounded-lg select-none hover:bg-gray-900/10 active:bg-gray-900/20 disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
+            type="button"
+          >
+            Next
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth="2"
+              stroke="currentColor"
+              aria-hidden="true"
+              className="w-4 h-4"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"
+              ></path>
+            </svg>
+          </button>
+        </div>
       </div>
     </AdminLayout>
   );
